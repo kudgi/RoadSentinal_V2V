@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- common version from 19.09.2025 (but without LTE settings) -->
+<ns3>
+    <LogLevel>
+        <!-- for field "name" refer to corresponding ns3 model -->
+        <!-- possible level values: error warn debug info function logic all * -->
+        <!-- including higher levels: level_error level_warn level_debug level_info level_function level_logic level_all ** -->
+        <!-- possible prefix values: prefix_func prefix_time prefix_node prefix_level prefix_all -->
+
+        <component name="*" value="error|prefix_level|prefix_time|prefix_func"/>
+
+        <component name="MainClass"             value="error|warn|info|debug"/>
+        <component name="MosaicSimulatorImpl"   value="error|warn|info|debug"/>
+        <component name="MosaicNs3Bridge"       value="error|warn|info|debug"/>
+        <component name="MosaicNodeManager"     value="error|warn|info|debug"/>
+        <component name="MosaicProxyApp"        value="error|warn|info|debug|prefix_node"/>
+        <component name="ClientServerChannel"   value="error|warn|info"/>
+
+        <component name="UdpSocketImpl"        value="error|warn|prefix_node"/>
+        <component name="UdpL4Protocol"        value="error|warn|prefix_node"/>
+        <component name="TrafficControlLayer"  value="error|warn|prefix_node"/>
+        <component name="Ipv4L3Protocol"       value="error|warn|prefix_node"/>
+        <component name="Ipv4Interface"        value="error|warn|prefix_node"/>
+        <component name="Ipv4GlobalRouting"    value="error|warn|prefix_node"/>
+        <component name="Ipv4StaticRouting"    value="error|warn|prefix_node"/>
+        <component name="ArpL3Protocol"        value="error|warn|prefix_node"/>
+
+        <component name="PropagationLossModel" value="error"/>
+        <component name="WifiPhy"              value="error|warn"/>
+        <component name="YansWifiPhy"          value="error|warn"/>
+        <component name="WifiNetDevice"        value="error|warn"/>
+        <component name="YansWifiChannel"      value="error|warn"/>
+        <component name="InterferenceHelper"   value="error|warn"/>
+    </LogLevel>
+
+    <!-- Global settings -->
+    <global name="RngSeed" value="1"/>
+
+    <!-- Federate settings -->
+    <default name="ns3::MosaicProxyApp::Port" value="8010"/>
+    <default name="ns3::MosaicNodeManager::numExtraRadioNodes" value="5"/>
+
+
+    <!-- Network settings -->
+    <default name="ns3::ArpCache::PendingQueueSize" value="100"/>
+
+    <!-- Propagation settings -->
+    <!-- YansWifiChannelHelper / yans-wifi-helper.cc : can not set the values in this config, this is done in NodeManager costructor -->
+
+    <default name="ns3::FriisPropagationLossModel::Frequency" value="5900000000"/>
+
+    <!-- Wifi settings -->
+    <default name="ns3::WifiPhy::Frequency" value="5900"/>
+    <default name="ns3::WifiPhy::ChannelNumber" value="180"/>
+    <default name="ns3::WifiPhy::ChannelWidth" value="10"/>
+    <default name="ns3::WifiPhy::RxSensitivity" value="-81.02"/>
+    <default name="ns3::WifiPhy::CcaEdThreshold" value="-99.0"/>
+    <default name="ns3::WifiPhy::TxPowerEnd" value="17"/>
+    <default name="ns3::WifiPhy::TxPowerStart" value="17"/>
+    <default name="ns3::WifiPhy::RxNoiseFigure" value="0"/>
+    <default name="ns3::WifiPhy::Sifs" value="+16000.0ns"/>
+    <default name="ns3::WifiPhy::Slot" value="+9000.0ns"/>
+    <default name="ns3::WifiPhy::Pifs" value="+25000.0ns"/>
+
+    <default name="ns3::WifiNetDevice::Mtu" value="2296"/>
+
+</ns3>

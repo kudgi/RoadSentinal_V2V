@@ -1,0 +1,5 @@
+{
+    "sumoConfigurationFile": "Barnim.sumocfg",
+    "updateInterval": "1s",
+    "visualizer": false
+}
