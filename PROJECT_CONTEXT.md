@@ -305,11 +305,3 @@ Verification runs:
 - `D:\Road V2V\eclipse-mosaic-25.2\logs\log-20260822-214414-Barnim` proved source TX, `veh_1` and `veh_2` RX, and forwarding, but was before the final source-event registration correction. Rebuild/deploy after that correction completed successfully; run a fresh bounded smoke test before claiming the final self-reception behavior from logs.
 
 The visualizer's transient red/green sending/receiving markers are driven by output `V2xMessageTransmission` and `V2xMessageReception` events, not by application vehicle-color changes. Therefore output records and application logs are authoritative for DENM evidence. Collision detection and automatic dashboard summaries are still not implemented.
-
-
-cd "D:\Road V2V\V2V-SIH"
-
-git remote remove origin
-git remote add origin https://github.com/kudgi/V2V.git
-
-git remote -v
