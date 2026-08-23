@@ -305,3 +305,22 @@ Verification runs:
 - `D:\Road V2V\eclipse-mosaic-25.2\logs\log-20260822-214414-Barnim` proved source TX, `veh_1` and `veh_2` RX, and forwarding, but was before the final source-event registration correction. Rebuild/deploy after that correction completed successfully; run a fresh bounded smoke test before claiming the final self-reception behavior from logs.
 
 The visualizer's transient red/green sending/receiving markers are driven by output `V2xMessageTransmission` and `V2xMessageReception` events, not by application vehicle-color changes. Therefore output records and application logs are authoritative for DENM evidence. Collision detection and automatic dashboard summaries are still not implemented.
+
+## Visible incident demonstration update (2026-08-22 22:23)
+
+The deterministic incident pair is now `veh_0` and `veh_1`. At 20 s both call `stopNow(VehicleStopMode.STOP, 2_000_000_000_000L)`, which extends beyond the 1000 s scenario. Run `log-20260822-222246-Barnim` confirms both SUMO stop requests and confirms speed `0.0` with `Stopped=true` from 31 s through the end of the bounded smoke test. Other vehicles remain controlled by SUMO and can pass using the second lane.
+
+For visible MOSAIC 2D markers, `veh_0` sends a four-message DENM alert burst at 20, 21, 22, and 23 s. A first-time receiver queues forwarding for one simulated second instead of forwarding immediately. This allows the visualizer's approximately 500 ms green RX state to appear before the relay produces a red TX state. Stable event-content duplicate suppression still limits each vehicle to one forwarding transmission.
+
+Authoritative output in `D:\Road V2V\eclipse-mosaic-25.2\logs\log-20260822-222246-Barnim\output.csv` confirms `veh_0` DENM TX, `veh_1`/`veh_2` DENM RX, and subsequent `veh_1`/`veh_2` forwarding TX. Watch simulation time 20-24 s for the visible sequence. The bounded run was manually stopped after verification; exit code 1 is from Ctrl+C, not an application failure.
+## Authoritative physical-collision status (2026-08-22 23:30)
+
+This section supersedes older notes that described two independent stopNow calls as an accident. Two vehicles stopping at different coordinates is not a collision and must not be presented as one.
+
+Current controlled roles are restored to eh_0 = CrashLead and eh_1 = CrashFollower, both requested on route 1/lane 0. CrashLead is a test-only prototype with high deceleration so eh_0 can stop abruptly at 20 s. CrashFollower has weak test-only braking parameters. These values are simulation controls, not automotive standards. Both controlled applications repeatedly request lane 0; the other 13 vehicles retain normal SUMO behavior and may pass in lane 1.
+
+The application now creates fresh persistent DENMs every 500 ms for an active incident. Receivers retain the hazard for 5 s and emit fresh relay DENMs every 2 s, so late-arriving vehicles can receive the warning and the application-level hop chain remains visible. The deployed JAR compiles with Java 17 and is at V2V/application/hard-brake-safety-25.2.jar.
+
+Physical collision is NOT yet verified. Repeated bounded runs produced no <collision> entry in SUMO collisions.xml. Trajectory output showed that SUMO either delayed unsafe vehicle insertion, changed the lane before lane pinning was corrected, or applied safe car-following and stopped the follower without overlap. Do not infer a crash from red/green visualizer activity, isStopped(), TTC, or geographic proximity. Only SUMO collision output is authoritative.
+
+The smallest correct next step is a dedicated deterministic SUMO collision scenario or a verified low-level TraCI/SUMO control path that can disable safe-speed checks for the designated crash follower. Keep the V2V application responsible for DENM creation, reception, TTC, risk, persistent beaconing, and relay; keep physical crash generation in SUMO. Verify one <collision> record naming both controlled vehicles, then verify both remain stopped for the rest of the scenario and ordinary vehicles pass in lane 1. Do not claim this milestone complete before those three facts are present in output.
