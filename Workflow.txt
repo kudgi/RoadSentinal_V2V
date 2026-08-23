@@ -1,0 +1,15 @@
+SUMO
+  ↓
+MOSAIC
+  ↓
+V2V Communication
+  ↓
+V2V Verifier
+  ↓
+Hop-to-Hop Propagation
+  ↓
+Risk Engine (TTC)
+  ↓
+Vehicle Response
+  ↓
+Dashboard + Metrics
