@@ -1,11 +1,19 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
+<?xml version="1.0" encoding="utf-8"?>
 <configuration>
-    <input>
-        <net-file value="Barnim.net.xml"/>
-    </input>
-    <time>
-        <begin value="0"/>
-        <end value="10000"/>
-    </time>
+  <input>
+    <net-file value="Barnim.net.xml" />
+  </input>
+  <time>
+    <begin value="0" />
+    <end value="10000" />
+  </time>
+  <output>
+    <collision-output value="collisions.xml" />
+  </output>
+  <processing>
+    <collision.action value="warn" />
+    <collision.stoptime value="2000" />
+    <collision.check-junctions value="true" />
+    <time-to-teleport value="-1" />
+  </processing>
 </configuration>
