@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Road Sentinel — V2V Safety Simulation</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="hud">
+    <header>
+      <div class="brand">
+        <strong>ROAD SENTINEL</strong>
+        <small>SUMO + ECLIPSE MOSAIC + THREE.JS</small>
+      </div>
+      <span id="status">LOADING V2V-SIH DATA</span>
+      <button id="quality" type="button">LOW</button>
+    </header>
+
+    <section id="alert">
+      <small>ACTIVE SAFETY EVENT</small>
+      <h1>HARD BRAKING AHEAD</h1>
+      <p id="detail">Waiting for verified MOSAIC DENM records.</p>
+    </section>
+
+    <aside>
+      <small>MOSAIC TELEMETRY</small>
+      <div class="grid">
+        <label><strong id="vehicles">0</strong>VEHICLES</label>
+        <label><strong id="rx">0</strong>DENM RX</label>
+        <label><strong id="tx">0</strong>DENM TX</label>
+        <label><strong id="time">0.0s</strong>SIM TIME</label>
+      </div>
+      <p>MAP <strong id="map">LOADING</strong></p>
+      <p>DATA <strong id="data">LOADING</strong></p>
+    </aside>
+
+    <footer>
+      <button id="play" type="button">▶ PLAY</button>
+      <button id="pause" type="button">Ⅱ PAUSE</button>
+      <button id="reset" type="button">↺ RESET</button>
+      <label>SPEED
+        <input id="speed" type="range" min="0.25" max="10" step="0.25" value="3">
+        <output id="speedValue">3×</output>
+      </label>
+      <span>Drag to orbit · wheel to zoom</span>
+    </footer>
+  </main>
+
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
+  </script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

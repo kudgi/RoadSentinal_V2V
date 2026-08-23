@@ -1,0 +1,116 @@
+[1mdiff --git a/v2v-app/src/org/eclipse/mosaic/app/v2v/HardBrakeSafetyApp.java b/v2v-app/src/org/eclipse/mosaic/app/v2v/HardBrakeSafetyApp.java[m
+[1mindex ce6c100..c88bb42 100644[m
+[1m--- a/v2v-app/src/org/eclipse/mosaic/app/v2v/HardBrakeSafetyApp.java[m
+[1m+++ b/v2v-app/src/org/eclipse/mosaic/app/v2v/HardBrakeSafetyApp.java[m
+[36m@@ -37,7 +37,16 @@[m [mpublic class HardBrakeSafetyApp extends AbstractApplication<VehicleOperatingSyst[m
+     private static final int HAZARD_HOP_TTL = 6;[m
+     private static final String DEMO_BRAKE_SOURCE_ID = "veh_0";[m
+     private static final long DEMO_BRAKE_START_NS = 20_000_000_000L;[m
+[31m-    private static final long DEMO_STOP_DURATION_NS = 60_000_000_000L;[m
+[32m+[m[32m    private static final long INCIDENT_STOP_DURATION_NS = 2_000_000_000_000L;[m
+[32m+[m[32m    private static final String CRASH_FOLLOWER_ID = "veh_1";[m
+[32m+[m[32m    private static final long INCIDENT_BEACON_INTERVAL_NS = 500_000_000L;[m
+[32m+[m[32m    private static final long FORWARD_DELAY_NS = 1_000_000_000L;[m
+[32m+[m[32m    private static final long RELAY_INTERVAL_NS = 2_000_000_000L;[m
+[32m+[m[32m    private static final long ACTIVE_HAZARD_TIMEOUT_NS = 5_000_000_000L;[m
+[32m+[m[32m    private static final long FOLLOWER_APPROACH_DURATION_NS = 15_000_000_000L;[m
+[32m+[m[32m    private static final double FOLLOWER_MINIMUM_APPROACH_SPEED_MPS = 36.11;[m
+[32m+[m[32m    private static final double CONTROLLED_LEAD_DECELERATION_MPS2 = -50.0;[m
+[32m+[m[32m    private static final double COLLISION_PROXIMITY_METRES = 12.0;[m
+     private static final double WARNING_TTC_SECONDS = 4.0;[m
+     private static final double CRITICAL_TTC_SECONDS = 2.0;[m
+ [m
+[36m@@ -46,7 +55,18 @@[m [mpublic class HardBrakeSafetyApp extends AbstractApplication<VehicleOperatingSyst[m
+     private double lastSpeed;[m
+     private boolean brakingEventReported;[m
+     private boolean demoBrakeCommandIssued;[m
+[32m+[m[32m    private boolean leadBrakeIssued;[m
+[32m+[m[32m    private boolean followerApproachIssued;[m
+[32m+[m[32m    private boolean collisionConfirmed;[m
+     private final Set<String> seenHazards = new HashSet<>();[m
+[32m+[m[32m    private Denm sourceIncidentDenm;[m
+[32m+[m[32m    private long nextSourceAlertAt = Long.MAX_VALUE;[m
+[32m+[m[32m    private Denm pendingForwardDenm;[m
+[32m+[m[32m    private GeoPoint pendingForwardPosition;[m
+[32m+[m[32m    private long pendingForwardAt = Long.MAX_VALUE;[m
+[32m+[m[32m    private long lastHazardReceivedAt = Long.MIN_VALUE;[m
+[32m+[m[32m    private GeoPoint latestHazardPosition;[m
+[32m+[m[32m    private long nextFollowerLanePinAt = Long.MIN_VALUE;[m
+ [m
+     @Override[m
+     public void onStartup() {[m
+[36m@@ -72,7 +92,11 @@[m [mpublic class HardBrakeSafetyApp extends AbstractApplication<VehicleOperatingSyst[m
+         }[m
+ [m
+         long now = getOperatingSystem().getSimulationTime();[m
+[31m-        issueDeterministicDemoBrake(now);[m
+[32m+[m[32m        keepCrashFollowerOnCollisionCourse(updated, now);[m
+[32m+[m[32m        issueDeterministicIncident(updated, now);[m
+[32m+[m[32m        detectFollowerCollision(updated, now);[m
+[32m+[m[32m        repeatIncidentBeaconIfDue(updated, now);[m
+[32m+[m[32m        forwardPendingDenmIfDue(now);[m
+         double acceleration = updated.getLongitudinalAcceleration() != null[m
+                 ? updated.getLongitudinalAcceleration()[m
+                 : deriveAcceleration(updated.getSpeed(), now);[m
+[36m@@ -95,17 +119,85 @@[m [mpublic class HardBrakeSafetyApp extends AbstractApplication<VehicleOperatingSyst[m
+         lastSpeed = updated.getSpeed();[m
+     }[m
+ [m
+[31m-    private void issueDeterministicDemoBrake(long now) {[m
+[31m-        if (!demoBrakeCommandIssued[m
+[32m+[m[32m    private void keepCrashFollowerOnCollisionCourse(VehicleData updated, long now) {[m
+[32m+[m[32m        boolean controlledCrashVehicle = CRASH_FOLLOWER_ID.equals(getOperatingSystem().getId())[m
+[32m+[m[32m                || DEMO_BRAKE_SOURCE_ID.equals(getOperatingSystem().getId());[m
+[32m+[m[32m        if (controlledCrashVehicle && !collisionConfirmed && now >= nextFollowerLanePinAt) {[m
+[32m+[m[32m            getOperatingSystem().changeLane(0, 1_000_000_000L);[m
+[32m+[m[32m            if (CRASH_FOLLOWER_ID.equals(getOperatingSystem().getId())) {[m
+[32m+[m[32m                double commandedSpeed = Math.max(updated.getSpeed(), FOLLOWER_MINIMUM_APPROACH_SPEED_MPS);[m
+[32m+[m[32m                getOperatingSystem().changeSpeedWithForcedAcceleration(commandedSpeed, 10.0);[m
+[32m+[m[32m            }[m
+[32m+[m[32m            nextFollowerLanePinAt = now + 500_000_000L;[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    private void issueDeterministicIncident(VehicleData updated, long now) {[m
+[32m+[m[32m        if (!leadBrakeIssued[m
+                 && DEMO_BRAKE_SOURCE_ID.equals(getOperatingSystem().getId())[m
+                 && now >= DEMO_BRAKE_START_NS) {[m
+[31m-            getOperatingSystem().stopNow(VehicleStopMode.STOP, DEMO_STOP_DURATION_NS);[m
+[31m-            transmitHardBrakingDenm(getOperatingSystem().getVehicleData(), now, -6.0);[m
+[31m-            demoBrakeCommandIssued = true;[m
+[31m-            getLog().info("DEMO incident vehicle stopped: time=" + now + ", vehicle=" + getOperatingSystem().getId() + ", duration=" + DEMO_STOP_DURATION_NS + " ns");[m
+[32m+[m[32m            getOperatingSystem().stopNow(VehicleStopMode.STOP, INCIDENT_STOP_DURATION_NS);[m
+[32m+[m[32m            getOperatingSystem().changeSpeedWithForcedAcceleration(0.0, CONTROLLED_LEAD_DECELERATION_MPS2);[m
+[32m+[m[32m            leadBrakeIssued = true;[m
+[32m+[m[32m            sourceIncidentDenm = transmitHardBrakingDenm(updated, now, -6.0);[m
+[32m+[m[32m            nextSourceAlertAt = now + INCIDENT_BEACON_INTERVAL_NS;[m
+[32m+[m[32m            getLog().info("LEAD EMERGENCY BRAKE: time=" + now + ", vehicle=" + getOperatingSystem().getId());[m
+[32m+[m[32m        }[m
+[32m+[m[32m        if (!followerApproachIssued[m
+[32m+[m[32m                && CRASH_FOLLOWER_ID.equals(getOperatingSystem().getId())[m
+[32m+[m[32m                && now >= DEMO_BRAKE_START_NS) {[m
+[32m+[m[32m            double commandedSpeed = Math.max(updated.getSpeed(), FOLLOWER_MINIMUM_APPROACH_SPEED_MPS);[m
+[32m+[m[32m            getOperatingSystem().changeLane(0, FOLLOWER_APPROACH_DURATION_NS);[m
+[32m+[m[32m            getOperatingSystem().changeSpeedWithInterval(commandedSpeed, FOLLOWER_APPROACH_DURATION_NS);[m
+[32m+[m[32m            followerApproachIssued = true;[m
+[32m+[m[32m            getLog().info("FOLLOWER COLLISION APPROACH: time=" + now + ", vehicle=" + getOperatingSystem().getId()[m
+[32m+[m[32m                    + ", commandedSpeed=" + commandedSpeed);[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    private void detectFollowerCollision(VehicleData updated, long now) {[m
+[32m+[m[32m        if (collisionConfirmed[m
+[32m+[m[32m                || !CRASH_FOLLOWER_ID.equals(getOperatingSystem().getId())[m
+[32m+[m[32m                || latestHazardPosition == null[m
+[32m+[m[32m                || now < DEMO_BRAKE_START_NS) {[m
+[32m+[m[32m            return;[m
+[32m+[m[32m        }[m
+[32m+[m[32m        double distance = latestHazardPosition.distanceTo(getOperatingSystem().getPosition());[m
+[32m+[m[32m        if (updated.isStopped() && distance <= COLLISION_PROXIMITY_METRES) {[m
+[32m+[m[32m            collisionConfirmed = true;[m
+[32m+[m[32m            sourceIncidentDenm = transmitHardBrakingDenm(updated, now, -6.0);[m
+[32m+[m[32m            nextSourceAlertAt = now + INCIDENT_BEACON_INTERVAL_NS;[m
+[32m+[m[32m            pendingForwardDenm = null;[m
+[32m+[m[32m            pendingForwardAt = Long.MAX_VALUE;[m
+[32m+[m[32m            getLog().info("COLLISION VEHICLE CONFIRMED: time=" + now + ", vehicle=" + getOperatingSystem().getId()[m
+[32m+[m[32m               
